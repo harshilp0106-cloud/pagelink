@@ -1,0 +1,6 @@
+{
+  "name": "Pagelink - Creator Link-in-Bio & Monetization Platform",
+  "description": "Complete SaaS link-in-bio platform for creators. Build customized bio pages, capture email subscribers, collect tips, analyze visitor traffic, and monetize your audience.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
