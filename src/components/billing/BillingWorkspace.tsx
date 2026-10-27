@@ -87,9 +87,9 @@ export function BillingWorkspace({ profile, onProfileChange }: BillingWorkspaceP
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-black text-slate-900 tracking-tight">Simple Creator Pricing</h2>
+            <h2 className="text-xl font-black text-slate-900 tracking-tight">All Access</h2>
             <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-bold text-indigo-700">
-              Only 1 Plan
+              Complete Creator Suite
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">

@@ -21,10 +21,11 @@ export default function App() {
   const [links, setLinks] = useState<PageLink[]>(() => storage.getLinks());
   const [socials, setSocials] = useState<SocialLink[]>(() => storage.getSocials());
 
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  // Authentication required: no automatic stored session on main page
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isPublicView, setIsPublicView] = useState(false);
   const [isSignupView, setIsSignupView] = useState(false);
-  const [authInitialMode, setAuthInitialMode] = useState<'signup' | 'login'>('signup');
+  const [authInitialMode, setAuthInitialMode] = useState<'signup' | 'login'>('login');
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
 

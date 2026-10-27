@@ -18,6 +18,9 @@ import {
   ArrowLeft,
   LogIn,
   UserPlus,
+  KeyRound,
+  CheckCircle2,
+  RotateCcw,
   Search,
   X,
   Shirt,
@@ -65,7 +68,7 @@ import { storage } from '@/src/lib/storage';
 import { MobileBlockShowcase } from './MobileBlockShowcase';
 
 interface SignupPageProps {
-  initialMode?: 'signup' | 'login';
+  initialMode?: 'signup' | 'login' | 'forgot_password';
   onSignupComplete: (newProfile: Profile, newLinks: PageLink[]) => void;
   onLoginSuccess?: (profile: Profile) => void;
   onCancel?: () => void;
@@ -135,7 +138,7 @@ export function SignupPage({
   onLoginSuccess,
   onCancel,
 }: SignupPageProps) {
-  const [authMode, setAuthMode] = useState<'signup' | 'login'>(initialMode);
+  const [authMode, setAuthMode] = useState<'signup' | 'login' | 'forgot_password'>(initialMode);
 
   // Signup fields
   const [handle, setHandle] = useState('');
@@ -146,12 +149,23 @@ export function SignupPage({
   const [categorySearch, setCategorySearch] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Login fields
-  const [loginEmail, setLoginEmail] = useState('monstilo@studio.com');
-  const [loginPassword, setLoginPassword] = useState('••••••••••••');
+  // Login fields - strictly empty, user must enter credentials
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  const existingProfiles = storage.getProfilesList();
+  // Forgot Password fields
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetStep, setResetStep] = useState<'request' | 'verify'>('request');
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isSendingReset, setIsSendingReset] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [passwordResetSuccess, setPasswordResetSuccess] = useState<string | null>(null);
+
   const cleanHandle = handle.toLowerCase().replace(/[^a-z0-9_-]/g, '');
   const isHandleAvailable = cleanHandle.length >= 3;
 
@@ -291,6 +305,15 @@ export function SignupPage({
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError(null);
+    if (!loginEmail.trim() || !loginPassword.trim()) {
+      setLoginError('Please enter both your email address and password to sign in.');
+      return;
+    }
+    if (!loginEmail.includes('@')) {
+      setLoginError('Please enter a valid email address.');
+      return;
+    }
     setIsLoggingIn(true);
     setTimeout(() => {
       setIsLoggingIn(false);
@@ -298,25 +321,54 @@ export function SignupPage({
       if (onLoginSuccess) {
         onLoginSuccess(currentProfile);
       }
-    }, 500);
+    }, 600);
   };
 
-  const handleQuickLoginAs = (profileItem: { id: string; handle: string; display_name: string }) => {
-    setIsLoggingIn(true);
+  const handleSendResetCode = (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetError(null);
+    if (!resetEmail.trim() || !resetEmail.includes('@')) {
+      setResetError('Please enter a valid email address.');
+      return;
+    }
+    setIsSendingReset(true);
     setTimeout(() => {
-      const current = storage.getProfile();
-      const updated = {
-        ...current,
-        id: profileItem.id,
-        handle: profileItem.handle,
-        display_name: profileItem.display_name.replace(' (Main)', ''),
-      };
-      storage.saveProfile(updated);
-      setIsLoggingIn(false);
-      if (onLoginSuccess) {
-        onLoginSuccess(updated);
-      }
-    }, 350);
+      setIsSendingReset(false);
+      setResetStep('verify');
+      setResetCode('849201'); // Auto-provision verification code for demo / testing ease
+    }, 700);
+  };
+
+  const handleConfirmResetPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetError(null);
+    if (!resetCode.trim()) {
+      setResetError('Please enter the 6-digit verification code.');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setResetError('Password must be at least 6 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setResetError('Passwords do not match. Please verify both fields.');
+      return;
+    }
+    setIsResettingPassword(true);
+    setTimeout(() => {
+      setIsResettingPassword(false);
+      try {
+        confetti({ particleCount: 75, spread: 80, origin: { y: 0.5 } });
+      } catch {}
+      setPasswordResetSuccess('Your password has been reset! Please sign in with your new password.');
+      setLoginEmail(resetEmail);
+      setLoginPassword('');
+      setAuthMode('login');
+      setResetStep('request');
+      setResetEmail('');
+      setNewPassword('');
+      setConfirmPassword('');
+    }, 700);
   };
 
   return (
@@ -602,6 +654,183 @@ export function SignupPage({
                   </button>
                 </form>
               </div>
+            ) : authMode === 'forgot_password' ? (
+              /* FORGOT PASSWORD FORM */
+              <div>
+                <div className="flex items-center gap-2.5 mb-2">
+                  <div className="flex size-9 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-md">
+                    <KeyRound className="size-5" />
+                  </div>
+                  <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+                    Reset Password
+                  </h1>
+                </div>
+                <p className="text-xs sm:text-sm text-slate-400 mb-6">
+                  {resetStep === 'request'
+                    ? 'Enter your registered email address to receive a secure password reset verification code.'
+                    : `We sent a 6-digit verification code to ${resetEmail}. Enter it below along with your new password.`}
+                </p>
+
+                {resetStep === 'request' ? (
+                  <form onSubmit={handleSendResetCode} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                        Registered Email Address
+                      </label>
+                      <div className="relative flex items-center rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2.5 focus-within:border-indigo-500">
+                        <Mail className="size-4 text-slate-500 mr-2.5 shrink-0" />
+                        <input
+                          type="email"
+                          required
+                          placeholder="you@domain.com"
+                          value={resetEmail}
+                          onChange={(e) => {
+                            setResetEmail(e.target.value);
+                            if (resetError) setResetError(null);
+                          }}
+                          className="w-full bg-transparent text-xs text-white placeholder:text-slate-600 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {resetError && (
+                      <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2.5 text-xs text-rose-300">
+                        {resetError}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={isSendingReset || !resetEmail}
+                      className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-md hover:bg-indigo-700 transition-all active:scale-98 disabled:opacity-50"
+                    >
+                      {isSendingReset ? 'Sending Verification Code...' : 'Send Password Reset Code'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMode('login');
+                        setResetError(null);
+                      }}
+                      className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+                    >
+                      <ArrowLeft className="size-3.5" /> Back to Sign In
+                    </button>
+                  </form>
+                ) : (
+                  <form onSubmit={handleConfirmResetPassword} className="space-y-4">
+                    {/* Demo Verification Helper Banner */}
+                    <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-3 text-xs text-indigo-300 flex items-center justify-between">
+                      <div>
+                        <span className="font-bold text-indigo-200">Verification Code: </span>
+                        <span className="font-mono bg-indigo-950/80 px-2 py-0.5 rounded text-white font-bold tracking-widest">
+                          {resetCode || '849201'}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setResetCode('849201')}
+                        className="text-[11px] font-bold text-indigo-400 underline hover:text-indigo-200"
+                      >
+                        Auto-fill
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                        6-Digit Verification Code
+                      </label>
+                      <div className="relative flex items-center rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2.5 focus-within:border-indigo-500">
+                        <KeyRound className="size-4 text-slate-500 mr-2.5 shrink-0" />
+                        <input
+                          type="text"
+                          required
+                          maxLength={6}
+                          placeholder="849201"
+                          value={resetCode}
+                          onChange={(e) => setResetCode(e.target.value.trim())}
+                          className="w-full bg-transparent text-xs text-white placeholder:text-slate-600 font-mono tracking-widest focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                        New Password
+                      </label>
+                      <div className="relative flex items-center rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2.5 focus-within:border-indigo-500">
+                        <Lock className="size-4 text-slate-500 mr-2.5 shrink-0" />
+                        <input
+                          type="password"
+                          required
+                          placeholder="Minimum 6 characters"
+                          value={newPassword}
+                          onChange={(e) => {
+                            setNewPassword(e.target.value);
+                            if (resetError) setResetError(null);
+                          }}
+                          className="w-full bg-transparent text-xs text-white placeholder:text-slate-600 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                        Confirm New Password
+                      </label>
+                      <div className="relative flex items-center rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2.5 focus-within:border-indigo-500">
+                        <Lock className="size-4 text-slate-500 mr-2.5 shrink-0" />
+                        <input
+                          type="password"
+                          required
+                          placeholder="Re-enter your new password"
+                          value={confirmPassword}
+                          onChange={(e) => {
+                            setConfirmPassword(e.target.value);
+                            if (resetError) setResetError(null);
+                          }}
+                          className="w-full bg-transparent text-xs text-white placeholder:text-slate-600 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {resetError && (
+                      <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2.5 text-xs text-rose-300">
+                        {resetError}
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      disabled={isResettingPassword || !resetCode || !newPassword || !confirmPassword}
+                      className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 py-3 text-sm font-bold text-white shadow-md hover:opacity-95 transition-all active:scale-98 disabled:opacity-50"
+                    >
+                      {isResettingPassword ? 'Updating Password...' : 'Save New Password & Sign In'}
+                    </button>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <button
+                        type="button"
+                        onClick={() => setResetStep('request')}
+                        className="text-xs text-slate-400 hover:text-white flex items-center gap-1"
+                      >
+                        <RotateCcw className="size-3" /> Resend Code
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAuthMode('login');
+                          setResetError(null);
+                        }}
+                        className="text-xs font-semibold text-indigo-400 hover:text-indigo-300"
+                      >
+                        Cancel &amp; Log In
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
             ) : (
               /* LOG IN FORM */
               <div>
@@ -610,75 +839,87 @@ export function SignupPage({
                     <LogIn className="size-5" />
                   </div>
                   <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-                    Sign In to Pagelink
+                    Sign In to PageLink
                   </h1>
                 </div>
                 <p className="text-xs sm:text-sm text-slate-400 mb-6">
-                  Manage your links, review your tip earnings, and edit your bio page.
+                  Enter your email and password to access your creator dashboard.
                 </p>
 
-                {/* Quick Account Switcher */}
-                <div className="mb-6 rounded-2xl border border-slate-800 bg-slate-900/60 p-4">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5 block">
-                    Fast Sign-in with Creator Profile
-                  </span>
-                  <div className="space-y-2">
-                    {existingProfiles.map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => handleQuickLoginAs(p)}
-                        className="flex w-full items-center justify-between rounded-xl border border-slate-700/80 bg-slate-800/80 px-3.5 py-2.5 text-left text-xs font-medium text-white transition-all hover:border-indigo-500 hover:bg-slate-800"
-                      >
-                        <div>
-                          <div className="font-bold text-slate-100">{p.display_name}</div>
-                          <div className="text-[11px] text-slate-400">@{p.handle}</div>
-                        </div>
-                        <span className="rounded-lg bg-indigo-600/30 px-2 py-1 text-[11px] font-bold text-indigo-300">
-                          Continue →
-                        </span>
-                      </button>
-                    ))}
+                {passwordResetSuccess && (
+                  <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs text-emerald-300">
+                    <CheckCircle2 className="size-4 shrink-0 text-emerald-400" />
+                    <span>{passwordResetSuccess}</span>
                   </div>
-                </div>
+                )}
 
                 {/* Standard credentials form */}
-                <form onSubmit={handleLoginSubmit} className="space-y-3.5">
+                <form onSubmit={handleLoginSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
                       Email Address
                     </label>
-                    <div className="relative flex items-center rounded-xl border border-slate-700 bg-slate-900 px-3 py-2">
-                      <Mail className="size-3.5 text-slate-500 mr-2 shrink-0" />
+                    <div className="relative flex items-center rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2.5 focus-within:border-indigo-500">
+                      <Mail className="size-4 text-slate-500 mr-2.5 shrink-0" />
                       <input
                         type="email"
                         required
+                        placeholder="you@domain.com"
                         value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
-                        className="w-full bg-transparent text-xs text-white focus:outline-none"
+                        onChange={(e) => {
+                          setLoginEmail(e.target.value);
+                          if (loginError) setLoginError(null);
+                          if (passwordResetSuccess) setPasswordResetSuccess(null);
+                        }}
+                        className="w-full bg-transparent text-xs text-white placeholder:text-slate-600 focus:outline-none"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">
-                      Password
-                    </label>
-                    <div className="relative flex items-center rounded-xl border border-slate-700 bg-slate-900 px-3 py-2">
-                      <Lock className="size-3.5 text-slate-500 mr-2 shrink-0" />
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-300">
+                        Password
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResetEmail(loginEmail);
+                          setResetStep('request');
+                          setResetError(null);
+                          setPasswordResetSuccess(null);
+                          setAuthMode('forgot_password');
+                        }}
+                        className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 hover:underline transition-colors"
+                      >
+                        Forgot Password?
+                      </button>
+                    </div>
+                    <div className="relative flex items-center rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2.5 focus-within:border-indigo-500">
+                      <Lock className="size-4 text-slate-500 mr-2.5 shrink-0" />
                       <input
                         type="password"
                         required
+                        placeholder="••••••••••••"
                         value={loginPassword}
-                        onChange={(e) => setLoginPassword(e.target.value)}
-                        className="w-full bg-transparent text-xs text-white focus:outline-none"
+                        onChange={(e) => {
+                          setLoginPassword(e.target.value);
+                          if (loginError) setLoginError(null);
+                        }}
+                        className="w-full bg-transparent text-xs text-white placeholder:text-slate-600 focus:outline-none"
                       />
                     </div>
                   </div>
 
+                  {loginError && (
+                    <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2.5 text-xs text-rose-300">
+                      {loginError}
+                    </div>
+                  )}
+
                   <button
                     type="submit"
-                    disabled={isLoggingIn}
+                    disabled={isLoggingIn || !loginEmail || !loginPassword}
                     className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-bold text-white shadow-md hover:bg-indigo-700 transition-all active:scale-98 disabled:opacity-50"
                   >
                     {isLoggingIn ? 'Signing in...' : 'Sign In to Dashboard'}
@@ -693,7 +934,11 @@ export function SignupPage({
               </span>
               <button
                 type="button"
-                onClick={() => setAuthMode(authMode === 'signup' ? 'login' : 'signup')}
+                onClick={() => {
+                  setAuthMode(authMode === 'signup' ? 'login' : 'signup');
+                  setResetError(null);
+                  setPasswordResetSuccess(null);
+                }}
                 className="text-indigo-400 hover:underline font-semibold"
               >
                 {authMode === 'signup' ? 'Already have an account? Log In' : "Don't have an account? Sign Up"}
@@ -706,7 +951,7 @@ export function SignupPage({
             <MobileBlockShowcase
               currentDisplayName={displayName}
               currentHandle={cleanHandle}
-              authMode={authMode}
+              authMode={authMode === 'signup' ? 'signup' : 'login'}
             />
           </div>
         </div>

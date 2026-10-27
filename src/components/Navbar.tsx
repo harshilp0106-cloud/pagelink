@@ -54,7 +54,7 @@ export function Navbar({
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'monetization', label: 'Audience & Tips', icon: Users },
     { id: 'seo', label: 'Domain & SEO', icon: Globe },
-    { id: 'billing', label: 'Billing & Plans', icon: CreditCard },
+    { id: 'billing', label: 'All Access', icon: Sparkles },
   ];
 
   const handleSwitchProfile = (p: { id: string; handle: string; display_name: string; tier: SubscriptionTier }) => {
@@ -269,20 +269,6 @@ export function Navbar({
           >
             <UserPlus className="size-3.5 text-indigo-600" />
             <span>Sign Up</span>
-          </button>
-
-          {/* Upgrade / Plan CTA */}
-          <button
-            type="button"
-            onClick={profile.subscription_tier === 'free' ? onOpenUpgradeModal : () => onSelectTab('billing')}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all shadow-sm ${
-              profile.subscription_tier === 'free'
-                ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-indigo-500/20 hover:opacity-95 active:scale-95'
-                : 'bg-indigo-50 text-indigo-700 border border-indigo-200/80 hover:bg-indigo-100'
-            }`}
-          >
-            <Sparkles className="size-3.5 text-indigo-500" />
-            <span>{profile.subscription_tier === 'free' ? 'Get All-Access ($4.99/mo)' : 'All-Access ($4.99/mo)'}</span>
           </button>
         </div>
       </div>
