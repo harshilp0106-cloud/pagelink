@@ -17,6 +17,7 @@ import {
   Lock,
   ArrowRight,
   ChevronDown,
+  Download,
 } from 'lucide-react';
 import type { Profile } from '@/src/types/index';
 import { storage } from '@/src/lib/storage';
@@ -149,6 +150,48 @@ export function CustomDomainsWorkspace({
       {activeTab === 'domain' ? (
         /* CUSTOM DOMAIN SETUP TAB */
         <div className="space-y-6">
+          {/* 1-Click Download Packages Card for Hostinger / Backup */}
+          <div className="rounded-3xl border border-indigo-200 bg-gradient-to-r from-indigo-50/90 via-purple-50/40 to-white p-5 shadow-xs">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="flex size-8 items-center justify-center rounded-xl bg-indigo-600 text-white shadow-xs">
+                    <Download className="size-4" />
+                  </span>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Download Project ZIP Files
+                  </h3>
+                  <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                    Ready to Upload
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 mt-1">
+                  Download the ready-to-upload Hostinger deployment package (with <code className="bg-white/80 px-1 py-0.5 rounded text-indigo-700 font-mono">.htaccess</code>, <code className="bg-white/80 px-1 py-0.5 rounded text-indigo-700 font-mono">index.html</code> &amp; assets) or the complete source code.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                <a
+                  href="/pagelink-hostinger-ready.zip"
+                  download="pagelink-hostinger-ready.zip"
+                  className="flex items-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-indigo-700 transition-all active:scale-98"
+                >
+                  <Download className="size-3.5" />
+                  <span>Download Hostinger-Ready ZIP</span>
+                </a>
+
+                <a
+                  href="/pagelink-source-code.zip"
+                  download="pagelink-source-code.zip"
+                  className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs"
+                >
+                  <Download className="size-3.5 text-slate-400" />
+                  <span>Download Source Code ZIP</span>
+                </a>
+              </div>
+            </div>
+          </div>
+
           {/* Active Domain Live Status Banner */}
           <div className="rounded-3xl border border-emerald-200 bg-gradient-to-br from-emerald-50/80 via-white to-indigo-50/40 p-6 shadow-xs">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
